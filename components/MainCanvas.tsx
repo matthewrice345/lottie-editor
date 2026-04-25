@@ -21,7 +21,7 @@ export const MainCanvas = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const animationJson = e?.target?.result as string;
-        setAnimationJson(JSON.parse(animationJson));
+        setAnimationJson(JSON.parse(animationJson), file.name);
       };
       reader.readAsText(file);
     }
@@ -31,7 +31,7 @@ export const MainCanvas = () => {
     const animationJson = await fetch(EXAMPLE_ANIMATION_URL).then((res) =>
       res.json(),
     );
-    setAnimationJson(animationJson);
+    setAnimationJson(animationJson, "example-animation.json");
   };
 
   return (

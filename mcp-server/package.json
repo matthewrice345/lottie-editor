@@ -1,0 +1,28 @@
+{
+  "name": "@lottie-editor/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "lottie-editor-mcp": "./dist/mcp-server/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/mcp-server/src/index.js"
+  },
+  "dependencies": {
+    "@lottie-animation-community/lottie-types": "^1.1.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@types/ws": "^8.18.1",
+    "lodash-es": "^4.17.21",
+    "ws": "^8.20.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^20",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  }
+}

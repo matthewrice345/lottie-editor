@@ -3,12 +3,19 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { Button } from "./ui/Button";
-import { Download, LogOut } from "lucide-react";
+import { Download, LogOut, Undo2, Redo2 } from "lucide-react";
 import { useAnimation } from "@/lib/hooks/useAnimation";
 
 export const NavBar = () => {
-  const { animationJson, removeAnimationJson, isAnimationLoading } =
-    useAnimation();
+  const {
+    animationJson,
+    removeAnimationJson,
+    isAnimationLoading,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useAnimation();
   const downloadRef = useRef<HTMLAnchorElement>(null);
 
   const handleDownloadClick = () => {
@@ -33,6 +40,26 @@ export const NavBar = () => {
       {animationJson && (
         <div className="flex items-center gap-4">
           <a ref={downloadRef} className="hidden"></a>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!canUndo}
+            onClick={undo}
+            aria-label="Undo"
+            title="Undo (⌘Z)"
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!canRedo}
+            onClick={redo}
+            aria-label="Redo"
+            title="Redo (⌘⇧Z)"
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
           <Button disabled={isAnimationLoading} onClick={handleDownloadClick}>
             <Download className="h-4 w-4 mr-2" />
             Download
