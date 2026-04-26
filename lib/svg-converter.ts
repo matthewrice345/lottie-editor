@@ -479,6 +479,7 @@ const convertElement = (
         convertElement(c, style, notes),
       );
       if (children.length === 0) return [];
+      disambiguateNames(children);
       // Reverse: SVG paints first-child first (bottom), Lottie renders
       // it[0] on top. Reverse so the SVG z-order is preserved.
       return [
@@ -618,6 +619,20 @@ const parseViewBox = (
   return { width: w || 100, height: h || 100 };
 };
 
+// When SVG siblings have the same tag (e.g. multiple `<rect>` with no `id`),
+// the converter would name them all `rect`, making them ambiguous in the
+// sidebar. Suffix duplicates: "rect", "rect 2", "rect 3" — first stays bare.
+const disambiguateNames = (shapes: object[]): void => {
+  const counts = new Map<string, number>();
+  for (const shape of shapes) {
+    const obj = shape as { nm?: string };
+    const base = obj.nm ?? "";
+    const seen = counts.get(base) ?? 0;
+    if (seen > 0) obj.nm = `${base} ${seen + 1}`;
+    counts.set(base, seen + 1);
+  }
+};
+
 export const convertSvgString = async (
   svgText: string,
 ): Promise<SvgConversion> => {
@@ -646,6 +661,7 @@ export const convertSvgString = async (
     const converted = convertElement(child, rootStyle, notes);
     top.push(...converted);
   }
+  disambiguateNames(top);
   // SVG renders earlier siblings UNDER later ones; Lottie renders shape[0]
   // ON TOP. Reverse so the SVG's first child (typically a background) ends
   // up at the bottom of the Lottie z-stack.

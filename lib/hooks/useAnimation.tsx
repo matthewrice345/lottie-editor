@@ -22,6 +22,10 @@ import {
   AddShapeOptions,
   setLayerVisibility,
   setShapeVisibility,
+  moveLayer,
+  moveShape,
+  renameLayer,
+  renameShape,
 } from "../animation";
 import { History } from "../history";
 import { createStorageValue } from "../storage";
@@ -41,6 +45,10 @@ interface AnimationContext {
   addShape: (layerIndex: number, options: AddShapeOptions) => void;
   toggleLayerVisibility: (layerIndex: number) => void;
   toggleShapeVisibility: (shapePath: string) => void;
+  moveLayerBy: (layerIndex: number, delta: number) => void;
+  moveShapeBy: (shapePath: string, delta: number) => void;
+  renameLayer: (layerIndex: number, name: string) => void;
+  renameShape: (shapePath: string, name: string) => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -66,6 +74,10 @@ const AnimationContext = createContext<AnimationContext>({
   addShape: () => null,
   toggleLayerVisibility: () => null,
   toggleShapeVisibility: () => null,
+  moveLayerBy: () => null,
+  moveShapeBy: () => null,
+  renameLayer: () => null,
+  renameShape: () => null,
   undo: () => null,
   redo: () => null,
   canUndo: false,
@@ -263,6 +275,60 @@ export const AnimationProvider = ({ children }: AnimationProviderProps) => {
     [animationJson, commit],
   );
 
+  const handleMoveLayerBy = useCallback(
+    (layerIndex: number, delta: number) => {
+      if (!animationJson) return;
+      const total = animationJson.layers.length;
+      const target = Math.max(0, Math.min(total - 1, layerIndex + delta));
+      if (target === layerIndex) return;
+      commit(moveLayer(animationJson, layerIndex, target));
+    },
+    [animationJson, commit],
+  );
+
+  const handleMoveShapeBy = useCallback(
+    (shapePath: string, delta: number) => {
+      if (!animationJson) return;
+      const dotIdx = shapePath.lastIndexOf(".");
+      if (dotIdx < 0) return;
+      const currentIndex = Number(shapePath.slice(dotIdx + 1));
+      const containerPath = shapePath.slice(0, dotIdx);
+      const container = lodashGet(animationJson, containerPath) as
+        | unknown[]
+        | undefined;
+      if (!Array.isArray(container)) return;
+      const target = Math.max(
+        0,
+        Math.min(container.length - 1, currentIndex + delta),
+      );
+      if (target === currentIndex) return;
+      commit(moveShape(animationJson, shapePath, target));
+    },
+    [animationJson, commit],
+  );
+
+  const handleRenameLayer = useCallback(
+    (layerIndex: number, name: string) => {
+      if (!animationJson) return;
+      const current = (animationJson.layers[layerIndex] as { nm?: string })?.nm;
+      if (current === name) return;
+      commit(renameLayer(animationJson, layerIndex, name));
+    },
+    [animationJson, commit],
+  );
+
+  const handleRenameShape = useCallback(
+    (shapePath: string, name: string) => {
+      if (!animationJson) return;
+      const node = lodashGet(animationJson, shapePath) as
+        | { nm?: string }
+        | undefined;
+      if (node?.nm === name) return;
+      commit(renameShape(animationJson, shapePath, name));
+    },
+    [animationJson, commit],
+  );
+
   const undo = useCallback(() => {
     const next = historyRef.current?.undo();
     if (next) {
@@ -398,6 +464,10 @@ export const AnimationProvider = ({ children }: AnimationProviderProps) => {
         addShape: handleAddShape,
         toggleLayerVisibility: handleToggleLayerVisibility,
         toggleShapeVisibility: handleToggleShapeVisibility,
+        moveLayerBy: handleMoveLayerBy,
+        moveShapeBy: handleMoveShapeBy,
+        renameLayer: handleRenameLayer,
+        renameShape: handleRenameShape,
         selectedShapePath,
         setSelectedShapePath,
         undo,

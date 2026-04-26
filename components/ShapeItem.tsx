@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Group } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  Group,
+} from "lucide-react";
 import { ShapeInfo } from "@/lib/animation";
 import { useAnimation } from "@/lib/hooks/useAnimation";
 import { SidebarItem } from "./SidebarItem";
@@ -9,6 +15,8 @@ import { Button } from "./ui/Button";
 interface ShapeItemProps {
   shape: ShapeInfo;
   depth?: number;
+  /** Total siblings in this shape's parent — used to disable the down arrow at the bottom. */
+  siblingCount: number;
 }
 
 const containsSelected = (
@@ -20,13 +28,27 @@ const containsSelected = (
   return shape.children.some((c) => containsSelected(c, selectedPath));
 };
 
-export const ShapeItem = ({ shape, depth = 0 }: ShapeItemProps) => {
-  const { setSelectedShapePath, selectedShapePath, toggleShapeVisibility } =
-    useAnimation();
+export const ShapeItem = ({
+  shape,
+  depth = 0,
+  siblingCount,
+}: ShapeItemProps) => {
+  const {
+    setSelectedShapePath,
+    selectedShapePath,
+    toggleShapeVisibility,
+    moveShapeBy,
+    renameShape,
+  } = useAnimation();
   const isGroup = shape.children.length > 0;
   const isSelected = selectedShapePath === shape.path;
   const hasSelectedChild =
     isGroup && containsSelected(shape, selectedShapePath);
+
+  // Index of this shape in its parent (last segment of the lodash path)
+  const myIndex = Number(shape.path.slice(shape.path.lastIndexOf(".") + 1));
+  const isFirst = myIndex === 0;
+  const isLast = myIndex === siblingCount - 1;
 
   // Auto-expand when a descendant is selected (e.g. via canvas click)
   const [isExpanded, setIsExpanded] = useState(false);
@@ -54,6 +76,8 @@ export const ShapeItem = ({ shape, depth = 0 }: ShapeItemProps) => {
           <SidebarItem
             onClick={handleClick}
             text={shape.name}
+            title={`${shape.path} — double-click to rename`}
+            onRename={(name) => renameShape(shape.path, name)}
             className={
               isSelected
                 ? "border-primary ring-1 ring-primary bg-accent"
@@ -73,6 +97,34 @@ export const ShapeItem = ({ shape, depth = 0 }: ShapeItemProps) => {
           variant="ghost"
           size="icon"
           className="h-7 w-7"
+          disabled={isFirst}
+          onClick={(e) => {
+            e.stopPropagation();
+            moveShapeBy(shape.path, -1);
+          }}
+          title="Move forward (toward top)"
+          aria-label="Move shape forward"
+        >
+          <ChevronUp className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          disabled={isLast}
+          onClick={(e) => {
+            e.stopPropagation();
+            moveShapeBy(shape.path, 1);
+          }}
+          title="Move backward (toward bottom)"
+          aria-label="Move shape backward"
+        >
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
           onClick={handleToggleVisibility}
           aria-label={shape.hidden ? "Show shape" : "Hide shape"}
           title={shape.hidden ? "Show shape" : "Hide shape"}
@@ -86,7 +138,12 @@ export const ShapeItem = ({ shape, depth = 0 }: ShapeItemProps) => {
       </div>
       {isExpanded &&
         shape.children.map((nestedShape, i) => (
-          <ShapeItem key={i} shape={nestedShape} depth={depth + 1} />
+          <ShapeItem
+            key={i}
+            shape={nestedShape}
+            depth={depth + 1}
+            siblingCount={shape.children.length}
+          />
         ))}
     </div>
   );

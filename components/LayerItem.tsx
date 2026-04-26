@@ -7,6 +7,8 @@ import {
   Circle,
   Eye,
   EyeOff,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { LayerInfo, ShapeInfo } from "@/lib/animation";
 import { ShapeItem } from "./ShapeItem";
@@ -32,15 +34,22 @@ const layerContainsSelected = (
 interface LayerListProps {
   layer: LayerInfo;
   layerIndex: number;
+  totalLayers: number;
 }
 
-export const LayerItem = ({ layer, layerIndex }: LayerListProps) => {
+export const LayerItem = ({
+  layer,
+  layerIndex,
+  totalLayers,
+}: LayerListProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const {
     deleteLayer,
     addShape,
     toggleLayerVisibility,
+    moveLayerBy,
+    renameLayer,
     selectedShapePath,
   } = useAnimation();
 
@@ -78,7 +87,9 @@ export const LayerItem = ({ layer, layerIndex }: LayerListProps) => {
         <div className="flex-1">
           <SidebarItem
             text={layer.name}
+            title={`${layer.path} — double-click to rename`}
             onClick={() => setIsExpanded(!isExpanded)}
+            onRename={(name) => renameLayer(layerIndex, name)}
             className={
               isHighlighted
                 ? "border-primary bg-accent"
@@ -93,8 +104,36 @@ export const LayerItem = ({ layer, layerIndex }: LayerListProps) => {
         <Button
           variant="ghost"
           size="icon"
+          className="h-7 w-7"
+          disabled={layerIndex === 0}
+          onClick={(e) => {
+            e.stopPropagation();
+            moveLayerBy(layerIndex, -1);
+          }}
+          title="Move forward (toward top)"
+          aria-label="Move layer forward"
+        >
+          <ChevronUp className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          disabled={layerIndex === totalLayers - 1}
+          onClick={(e) => {
+            e.stopPropagation();
+            moveLayerBy(layerIndex, 1);
+          }}
+          title="Move backward (toward bottom)"
+          aria-label="Move layer backward"
+        >
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={handleToggleVisibility}
-          className="h-8 w-8"
+          className="h-7 w-7"
           title={layer.hidden ? `Show ${layer.name}` : `Hide ${layer.name}`}
           aria-label={layer.hidden ? "Show layer" : "Hide layer"}
         >
@@ -149,7 +188,13 @@ export const LayerItem = ({ layer, layerIndex }: LayerListProps) => {
         </Button>
       </div>
       {isExpanded &&
-        layer.shapes.map((shape, i) => <ShapeItem key={i} shape={shape} />)}
+        layer.shapes.map((shape, i) => (
+          <ShapeItem
+            key={i}
+            shape={shape}
+            siblingCount={layer.shapes.length}
+          />
+        ))}
     </div>
   );
 };
