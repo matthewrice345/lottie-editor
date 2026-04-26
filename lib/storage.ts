@@ -3,7 +3,17 @@ export const createStorageValue = <T>(key: string, defaultValue: T | null) => {
   const get = (): T | null => {
     if (!isBrowser) return defaultValue;
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
+    if (!item) return defaultValue;
+    try {
+      return JSON.parse(item);
+    } catch (e) {
+      console.warn(
+        `[storage] failed to parse "${key}", clearing it:`,
+        (e as Error).message,
+      );
+      localStorage.removeItem(key);
+      return defaultValue;
+    }
   };
 
   const set = (value: T) => {

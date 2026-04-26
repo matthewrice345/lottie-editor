@@ -7,6 +7,8 @@ import {
   RenameShapeInput,
   SetAnimationDurationInput,
   SetLayerTransformInput,
+  SetLayerVisibilityInput,
+  SetShapeVisibilityInput,
   UpdateFillOpacityInput,
   UpdateStrokeWidthInput,
 } from "../schemas.js";
@@ -17,6 +19,8 @@ import {
   renameShape,
   setAnimationDuration,
   setLayerTransform,
+  setLayerVisibility,
+  setShapeVisibility,
   updateFillOpacity,
   updateStrokeWidth,
 } from "../../../lib/animation.js";
@@ -141,6 +145,38 @@ export const register = (server: McpServer, store: DocumentStore) => {
       const next = updateFillOpacity(entry.history.current, shape_path, opacity);
       store.applyMutation(id, next);
       return jsonResult({ doc_id: id, shape_path, opacity });
+    },
+  );
+
+  server.registerTool(
+    "set_layer_visibility",
+    {
+      description:
+        "Hide or show a layer (sets the lottie native `hd` flag). Hidden layers don't render but stay in the document. Use this instead of `delete_layer` when you want to toggle visibility non-destructively. Pushes onto undo history.",
+      inputSchema: SetLayerVisibilityInput,
+    },
+    async ({ doc_id, layer_index, hidden }) => {
+      const id = store.resolveId(doc_id);
+      const entry = store.get(id);
+      const next = setLayerVisibility(entry.history.current, layer_index, hidden);
+      store.applyMutation(id, next);
+      return jsonResult({ doc_id: id, layer_index, hidden });
+    },
+  );
+
+  server.registerTool(
+    "set_shape_visibility",
+    {
+      description:
+        "Hide or show a shape (sets the lottie native `hd` flag) at the given lodash path. Works for groups, fills, strokes, and primitives. Hidden shapes don't render but stay in the document. Pushes onto undo history.",
+      inputSchema: SetShapeVisibilityInput,
+    },
+    async ({ doc_id, shape_path, hidden }) => {
+      const id = store.resolveId(doc_id);
+      const entry = store.get(id);
+      const next = setShapeVisibility(entry.history.current, shape_path, hidden);
+      store.applyMutation(id, next);
+      return jsonResult({ doc_id: id, shape_path, hidden });
     },
   );
 

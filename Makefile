@@ -8,14 +8,27 @@ help:                ## Show this help
 install:             ## Install all workspace dependencies
 	npm install
 
-start: mcp-build      ## Start web editor + MCP bridge (Ctrl-C stops both)
+start: mcp-build      ## Start web editor + MCP bridge (if not already running) + open browser
 	@echo "▶ web editor:  http://localhost:3000"
-	@echo "▶ MCP bridge:  ws://localhost:8765"
-	@echo "  Ctrl-C to stop both."
 	@trap 'echo; echo "▶ stopping..."; kill 0 2>/dev/null; wait 2>/dev/null; exit 0' INT TERM; \
-	  npm run dev & \
-	  node mcp-server/dist/mcp-server/src/index.js & \
-	  wait
+	  ( \
+	    until nc -z localhost 3000 2>/dev/null; do sleep 0.3; done; \
+	    if command -v open >/dev/null 2>&1; then open http://localhost:3000; \
+	    elif command -v xdg-open >/dev/null 2>&1; then xdg-open http://localhost:3000; \
+	    fi \
+	  ) & \
+	  if nc -z localhost 8765 2>/dev/null; then \
+	    echo "▶ MCP bridge:  already running on :8765 (Claude Code spawned its own MCP). Using that."; \
+	    echo "  Ctrl-C stops the web editor."; \
+	    npm run dev & \
+	    wait; \
+	  else \
+	    echo "▶ MCP bridge:  ws://localhost:8765 (spawned by make)"; \
+	    echo "  Ctrl-C stops both."; \
+	    npm run dev & \
+	    node mcp-server/dist/mcp-server/src/index.js & \
+	    wait; \
+	  fi
 
 stop:                ## Force-kill anything bound to ports 3000 and 8765
 	@lsof -ti :3000 2>/dev/null | xargs -r kill 2>/dev/null || true

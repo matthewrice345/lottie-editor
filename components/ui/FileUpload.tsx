@@ -27,7 +27,9 @@ export const FileUpload = ({ onUpload }: FileUploadProps) => {
       className="border-2 border-dashed border-muted-foreground rounded-md p-8 flex flex-col items-center justify-center gap-4 cursor-pointer"
     >
       <UploadIcon className="w-8 h-8 text-muted-foreground" />
-      <p className="text-muted-foreground">Drag and drop a file here</p>
+      <p className="text-muted-foreground">
+        Drag and drop a .json or .svg file here
+      </p>
       <Button
         variant="outline"
         type="button"
@@ -35,7 +37,13 @@ export const FileUpload = ({ onUpload }: FileUploadProps) => {
       >
         Select file
       </Button>
-      <input ref={fileInput} type="file" hidden onChange={handleFileOnChange} />
+      <input
+        ref={fileInput}
+        type="file"
+        hidden
+        accept=".json,application/json,.svg,image/svg+xml"
+        onChange={handleFileOnChange}
+      />
     </div>
   );
 };

@@ -16,6 +16,8 @@
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@types/ws": "^8.18.1",
     "lodash-es": "^4.17.21",
+    "svg-pathdata": "^8.0.0",
+    "svgson": "^5.3.1",
     "ws": "^8.20.0",
     "zod": "^3.23.0"
   },

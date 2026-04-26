@@ -1,6 +1,14 @@
-import { useState } from "react";
-import { Layers, Trash2, Plus, Square, Circle } from "lucide-react";
-import { LayerInfo } from "@/lib/animation";
+import { useEffect, useState } from "react";
+import {
+  Layers,
+  Trash2,
+  Plus,
+  Square,
+  Circle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { LayerInfo, ShapeInfo } from "@/lib/animation";
 import { ShapeItem } from "./ShapeItem";
 import { SidebarItem } from "./SidebarItem";
 import { Button } from "./ui/Button";
@@ -8,6 +16,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/Popover";
 import { useAnimation } from "@/lib/hooks/useAnimation";
 
 const DEFAULT_NEW_SHAPE_COLOR = { r: 128, g: 128, b: 128, a: 1 };
+
+const layerContainsSelected = (
+  shapes: ShapeInfo[],
+  selectedPath: string | null,
+): boolean => {
+  if (!selectedPath) return false;
+  for (const s of shapes) {
+    if (s.path === selectedPath) return true;
+    if (layerContainsSelected(s.children, selectedPath)) return true;
+  }
+  return false;
+};
 
 interface LayerListProps {
   layer: LayerInfo;
@@ -17,7 +37,24 @@ interface LayerListProps {
 export const LayerItem = ({ layer, layerIndex }: LayerListProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const { deleteLayer, addShape } = useAnimation();
+  const {
+    deleteLayer,
+    addShape,
+    toggleLayerVisibility,
+    selectedShapePath,
+  } = useAnimation();
+
+  const isLayerItselfSelected = selectedShapePath === layer.path;
+  const hasSelectedDescendant = layerContainsSelected(
+    layer.shapes,
+    selectedShapePath,
+  );
+  const isHighlighted = isLayerItselfSelected || hasSelectedDescendant;
+
+  // Auto-expand when a descendant is selected (via canvas click, etc.)
+  useEffect(() => {
+    if (hasSelectedDescendant) setIsExpanded(true);
+  }, [hasSelectedDescendant]);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -30,14 +67,43 @@ export const LayerItem = ({ layer, layerIndex }: LayerListProps) => {
     setIsExpanded(true);
   };
 
+  const handleToggleVisibility = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleLayerVisibility(layerIndex);
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-1">
         <div className="flex-1">
-          <SidebarItem text={layer.name} onClick={() => setIsExpanded(!isExpanded)}>
+          <SidebarItem
+            text={layer.name}
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={
+              isHighlighted
+                ? "border-primary bg-accent"
+                : layer.hidden
+                  ? "opacity-50"
+                  : undefined
+            }
+          >
             <Layers className="h-4 w-4" />
           </SidebarItem>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleToggleVisibility}
+          className="h-8 w-8"
+          title={layer.hidden ? `Show ${layer.name}` : `Hide ${layer.name}`}
+          aria-label={layer.hidden ? "Show layer" : "Hide layer"}
+        >
+          {layer.hidden ? (
+            <EyeOff className="h-3 w-3" />
+          ) : (
+            <Eye className="h-3 w-3" />
+          )}
+        </Button>
         <Popover open={addOpen} onOpenChange={setAddOpen}>
           <PopoverTrigger asChild>
             <Button

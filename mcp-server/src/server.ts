@@ -8,6 +8,8 @@ import * as create from "./tools/create.js";
 import * as edit from "./tools/edit.js";
 import * as inspect from "./tools/inspect.js";
 import * as geometry from "./tools/geometry.js";
+import * as animate from "./tools/animate.js";
+import * as compose from "./tools/compose.js";
 import * as history from "./tools/history.js";
 
 export interface CreatedServer {
@@ -29,6 +31,8 @@ export const createServer = (bridge?: Bridge): CreatedServer => {
   edit.register(server, store);
   inspect.register(server, store);
   geometry.register(server, store);
+  animate.register(server, store);
+  compose.register(server, store);
   history.register(server, store);
 
   bridge?.setHandler((msg, fromClientId) => {

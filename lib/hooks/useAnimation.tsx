@@ -10,6 +10,7 @@ import React, {
   useState,
 } from "react";
 import { Animation } from "@lottie-animation-community/lottie-types";
+import { get as lodashGet } from "lodash-es";
 import {
   RgbaColor,
   updateDimensions,
@@ -19,6 +20,8 @@ import {
   addShapeLayer,
   addShape,
   AddShapeOptions,
+  setLayerVisibility,
+  setShapeVisibility,
 } from "../animation";
 import { History } from "../history";
 import { createStorageValue } from "../storage";
@@ -36,6 +39,8 @@ interface AnimationContext {
   deleteLayer: (layerIndex: number) => void;
   addShapeLayer: (name?: string) => void;
   addShape: (layerIndex: number, options: AddShapeOptions) => void;
+  toggleLayerVisibility: (layerIndex: number) => void;
+  toggleShapeVisibility: (shapePath: string) => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -59,6 +64,8 @@ const AnimationContext = createContext<AnimationContext>({
   deleteLayer: () => null,
   addShapeLayer: () => null,
   addShape: () => null,
+  toggleLayerVisibility: () => null,
+  toggleShapeVisibility: () => null,
   undo: () => null,
   redo: () => null,
   canUndo: false,
@@ -106,18 +113,48 @@ export const AnimationProvider = ({ children }: AnimationProviderProps) => {
     ws.send(JSON.stringify({ type: "client-clear", doc_id: docId }));
   }, []);
 
+  // On mount: only restore from localStorage if this is a mid-session refresh
+  // (same tab reload), NOT a fresh tab open. The session marker lives in
+  // sessionStorage, which clears when the tab closes but survives reloads.
+  // Always clear loading state unconditionally — even if storage throws.
   useEffect(() => {
-    if (animationJson) {
-      animationStorage.set(animationJson);
-    } else {
-      const stored = animationStorage.get();
-      if (stored) {
-        historyRef.current = new History<Animation>(stored);
-        setAnimation(stored);
+    try {
+      const SESSION_KEY = "lottie-editor-session";
+      const isMidSessionReload =
+        typeof window !== "undefined" &&
+        window.sessionStorage.getItem(SESSION_KEY) === "1";
+      if (isMidSessionReload) {
+        const stored = animationStorage.get();
+        if (stored) {
+          historyRef.current = new History<Animation>(stored);
+          setAnimation(stored);
+        }
+      } else {
+        // Fresh tab open: ignore any persisted lottie. The user can re-upload,
+        // click "try an example", or have Claude push state via the bridge.
+        animationStorage.remove();
       }
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(SESSION_KEY, "1");
+      }
+    } catch (e) {
+      console.warn("[useAnimation] storage error on mount:", e);
+    } finally {
       setIsAnimationLoading(false);
     }
-  }, [animationJson, setAnimation]);
+  }, [setAnimation]);
+
+  // Persist to localStorage whenever animationJson changes (so a mid-session
+  // refresh can restore it).
+  useEffect(() => {
+    if (animationJson) {
+      try {
+        animationStorage.set(animationJson);
+      } catch (e) {
+        console.warn("[useAnimation] failed to persist to localStorage:", e);
+      }
+    }
+  }, [animationJson]);
 
   const commit = useCallback(
     (next: Animation) => {
@@ -200,6 +237,28 @@ export const AnimationProvider = ({ children }: AnimationProviderProps) => {
     (layerIndex: number, options: AddShapeOptions) => {
       if (!animationJson) return;
       commit(addShape(animationJson, layerIndex, options));
+    },
+    [animationJson, commit],
+  );
+
+  const handleToggleLayerVisibility = useCallback(
+    (layerIndex: number) => {
+      if (!animationJson) return;
+      const current = (animationJson.layers[layerIndex] as { hd?: boolean })
+        ?.hd === true;
+      commit(setLayerVisibility(animationJson, layerIndex, !current));
+    },
+    [animationJson, commit],
+  );
+
+  const handleToggleShapeVisibility = useCallback(
+    (shapePath: string) => {
+      if (!animationJson) return;
+      const node = lodashGet(animationJson, shapePath) as
+        | { hd?: boolean }
+        | undefined;
+      const current = node?.hd === true;
+      commit(setShapeVisibility(animationJson, shapePath, !current));
     },
     [animationJson, commit],
   );
@@ -337,6 +396,8 @@ export const AnimationProvider = ({ children }: AnimationProviderProps) => {
         deleteLayer: handleDeleteLayer,
         addShapeLayer: handleAddShapeLayer,
         addShape: handleAddShape,
+        toggleLayerVisibility: handleToggleLayerVisibility,
+        toggleShapeVisibility: handleToggleShapeVisibility,
         selectedShapePath,
         setSelectedShapePath,
         undo,

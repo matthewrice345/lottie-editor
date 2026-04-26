@@ -3,8 +3,9 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { Button } from "./ui/Button";
-import { Download, LogOut, Undo2, Redo2 } from "lucide-react";
+import { Download, LogOut, Undo2, Redo2, Sun, Moon } from "lucide-react";
 import { useAnimation } from "@/lib/hooks/useAnimation";
+import { useTheme } from "@/lib/hooks/useTheme";
 
 export const NavBar = () => {
   const {
@@ -16,6 +17,7 @@ export const NavBar = () => {
     canUndo,
     canRedo,
   } = useAnimation();
+  const { theme, toggle, mounted } = useTheme();
   const downloadRef = useRef<HTMLAnchorElement>(null);
 
   const handleDownloadClick = () => {
@@ -37,8 +39,28 @@ export const NavBar = () => {
           <span className="font-medium">Lottie Editor</span>
         </Link>
       </div>
-      {animationJson && (
-        <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggle}
+          aria-label={
+            theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+          }
+          title={
+            theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+          }
+        >
+          {!mounted ? (
+            <Sun className="h-4 w-4 opacity-0" />
+          ) : theme === "dark" ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+        {animationJson && (
+          <>
           <a ref={downloadRef} className="hidden"></a>
           <Button
             variant="outline"
@@ -68,8 +90,9 @@ export const NavBar = () => {
             <LogOut className="h-4 w-4 mr-2" />
             Exit
           </Button>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </header>
   );
 };

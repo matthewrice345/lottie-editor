@@ -61,7 +61,7 @@ This opens a UI listing every tool with its input schema. A good first call:
 
 Goes in `~/Library/Application Support/Claude/claude_desktop_config.json` (Claude Desktop) or your Claude Code MCP config. Restart the client after editing.
 
-## Tools (37)
+## Tools (53)
 
 Every tool's `doc_id` is **optional** — when omitted, it defaults to the most-recently-touched open document. With one document open (the typical case when chatting alongside the editor), you never need to pass `doc_id`.
 
@@ -71,13 +71,19 @@ Reads: `get_animation_layers`, `get_shape`, `get_framerate`, `get_dimensions`, `
 
 Writes: `update_shape_color`, `update_framerate`, `update_dimensions`, `delete_layer`, `bulk_update_color`, `update_stroke_width`, `update_fill_opacity`, `set_animation_duration`.
 
-Edit: `rename_layer`, `rename_shape`, `move_layer`, `move_shape`, `set_layer_transform`.
+Edit: `rename_layer`, `rename_shape`, `move_layer`, `move_shape`, `set_layer_transform`, `set_corner_radius`, `set_layer_parent`, `duplicate_layer`.
 
-Create: `add_shape_layer`, `add_rectangle`, `add_ellipse`, `add_stroke`.
+Create: `add_shape_layer`, `add_rectangle`, `add_ellipse`, `add_polygon`, `add_star`, `add_path`, `add_stroke`, `add_text_layer`.
+
+Import: `import_image` (PNG/JPG → image layer), `import_svg` (SVG → decomposable shape layer with full path conversion).
+
+Animate: `animate_property` (static → animated), `set_keyframe`, `remove_keyframe`, `shift_keyframes`, `scale_keyframe_times`. Easings: `linear`, `ease-in`, `ease-out`, `ease-in-out`.
 
 Inspect (animation/timing): `describe_animation`, `list_animated_properties`, `get_keyframes`, `get_layer_timing`.
 
 Geometry (positioning): `set_group_transform`, `get_layer_bounds`, `get_shape_bounds`, `align`.
+
+Effects & masking: `set_layer_blend_mode`, `add_mask`, `set_stroke_dash`, `add_drop_shadow`, `add_blur`.
 
 History: `undo`, `redo` (per document; up to 50 entries; in-memory only).
 

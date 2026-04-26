@@ -1,6 +1,7 @@
 import { loadFromSource, writeToPath } from "../io.js";
-import { CloseInput, ListInput, LoadInput, SaveInput, SummaryInput, } from "../schemas.js";
+import { CloseInput, CreateBlankLottieInput, ListInput, LoadInput, SaveInput, SummaryInput, } from "../schemas.js";
 import { animationDurationSeconds, colorPalette } from "../lottie-utils.js";
+import { createBlankLottie } from "../../../lib/animation.js";
 import { jsonResult } from "./shared.js";
 export const register = (server, store) => {
     server.registerTool("load_lottie", {
@@ -21,6 +22,30 @@ export const register = (server, store) => {
                 layer_count: animation.layers.length,
                 color_palette: colorPalette(animation),
             },
+        });
+    });
+    server.registerTool("create_blank_lottie", {
+        description: "Create a fresh empty lottie document with no layers and become its owner. Defaults: 1080×1080, 30fps, 3-second duration, name 'Untitled'. Returns a doc_id ready for `import_svg`, `add_shape_layer`, or other create tools. Use this as the first step when starting from scratch (e.g., when building a lottie around an SVG).",
+        inputSchema: CreateBlankLottieInput,
+    }, async ({ width, height, fps, duration_seconds, duration_frames, name }) => {
+        const animation = createBlankLottie({
+            width,
+            height,
+            fps,
+            duration_seconds,
+            duration_frames,
+            name,
+        });
+        const entry = store.create(animation, animation.nm ?? "Untitled");
+        return jsonResult({
+            doc_id: entry.id,
+            name: entry.name,
+            width: animation.w,
+            height: animation.h,
+            framerate: animation.fr,
+            in_frame: animation.ip,
+            out_frame: animation.op,
+            duration_seconds: animationDurationSeconds(animation),
         });
     });
     server.registerTool("save_lottie", {

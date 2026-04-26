@@ -166,4 +166,200 @@ export const AlignInput = {
     vertical: VerticalAlign.optional(),
     margin: z.number().nonnegative().optional(),
 };
+export const ImportImageInput = {
+    doc_id: DocId,
+    source: z.string().min(1),
+    name: z.string().optional(),
+};
+export const ImportSvgInput = {
+    doc_id: DocId,
+    source: z.string().min(1),
+    name: z.string().optional(),
+    split: z
+        .enum(["single-layer", "per-top-level"])
+        .optional(),
+};
+// ===== Tier 1: Keyframes =====
+const EasingEnum = z.enum(["linear", "ease-in", "ease-out", "ease-in-out"]);
+const KeyframeValue = z.union([z.number(), z.array(z.number())]);
+const KeyframeInputSchema = z.object({
+    t: z.number(),
+    v: KeyframeValue,
+    easing: EasingEnum.optional(),
+});
+export const AnimatePropertyInput = {
+    doc_id: DocId,
+    property_path: z.string().min(1),
+    keyframes: z.array(KeyframeInputSchema).min(2),
+    default_easing: EasingEnum.optional(),
+};
+export const SetKeyframeInput = {
+    doc_id: DocId,
+    property_path: z.string().min(1),
+    time: z.number(),
+    value: KeyframeValue,
+    easing: EasingEnum.optional(),
+};
+export const RemoveKeyframeInput = {
+    doc_id: DocId,
+    property_path: z.string().min(1),
+    index: z.number().int().nonnegative(),
+};
+export const ShiftKeyframesInput = {
+    doc_id: DocId,
+    property_path: z.string().min(1),
+    frame_offset: z.number(),
+};
+export const ScaleKeyframeTimesInput = {
+    doc_id: DocId,
+    property_path: z.string().min(1),
+    multiplier: z.number().positive(),
+    anchor: z.union([z.literal("first"), z.number()]).optional(),
+};
+// ===== Tier 1: Text =====
+export const AddTextLayerInput = {
+    doc_id: DocId,
+    text: z.string().min(1),
+    font_family: z.string().optional(),
+    font_size: z.number().positive().optional(),
+    color: RgbaColorSchema.optional(),
+    position: positionTuple.optional(),
+    justification: z.enum(["left", "center", "right"]).optional(),
+    name: z.string().optional(),
+    tracking: z.number().optional(),
+    line_height: z.number().optional(),
+};
+// ===== Tier 1: Parenting =====
+export const SetLayerParentInput = {
+    doc_id: DocId,
+    child_layer_index: z.number().int().nonnegative(),
+    parent_layer_index: z.number().int().nonnegative().nullable(),
+};
+// ===== Tier 2: Duplicate =====
+export const DuplicateLayerInput = {
+    doc_id: DocId,
+    layer_index: z.number().int().nonnegative(),
+    name: z.string().optional(),
+};
+// ===== Tier 2: Polygon / Star =====
+const PolystarShared = {
+    doc_id: DocId,
+    layer_index: z.number().int().nonnegative(),
+    points: z.number().int().min(3),
+    outer_radius: z.number().positive(),
+    rotation: z.number().optional(),
+    outer_roundness: z.number().min(0).max(100).optional(),
+    position: positionTuple.optional(),
+    color: RgbaColorSchema,
+    name: z.string().optional(),
+};
+export const AddPolygonInput = PolystarShared;
+export const AddStarInput = {
+    ...PolystarShared,
+    inner_radius: z.number().positive().optional(),
+    inner_roundness: z.number().min(0).max(100).optional(),
+};
+// ===== Tier 2: Custom path =====
+export const AddPathInput = {
+    doc_id: DocId,
+    layer_index: z.number().int().nonnegative(),
+    vertices: z.array(positionTuple).min(2),
+    in_tangents: z.array(positionTuple).optional(),
+    out_tangents: z.array(positionTuple).optional(),
+    closed: z.boolean().optional(),
+    fill_color: RgbaColorSchema.optional(),
+    stroke_color: RgbaColorSchema.optional(),
+    stroke_width: z.number().positive().optional(),
+    position: positionTuple.optional(),
+    name: z.string().optional(),
+};
+// ===== Tier 2: Corner radius =====
+export const SetCornerRadiusInput = {
+    doc_id: DocId,
+    shape_path: z.string().min(1),
+    radius: z.number().min(0),
+};
+// ===== Tier 3: Blend mode =====
+export const SetLayerBlendModeInput = {
+    doc_id: DocId,
+    layer_index: z.number().int().nonnegative(),
+    mode: z.enum([
+        "normal",
+        "multiply",
+        "screen",
+        "overlay",
+        "darken",
+        "lighten",
+        "color-dodge",
+        "color-burn",
+        "hard-light",
+        "soft-light",
+        "difference",
+        "exclusion",
+        "hue",
+        "saturation",
+        "color",
+        "luminosity",
+    ]),
+};
+// ===== Tier 3: Mask =====
+export const AddMaskInput = {
+    doc_id: DocId,
+    layer_index: z.number().int().nonnegative(),
+    vertices: z.array(positionTuple).min(3),
+    in_tangents: z.array(positionTuple).optional(),
+    out_tangents: z.array(positionTuple).optional(),
+    closed: z.boolean().optional(),
+    mode: z
+        .enum(["add", "subtract", "intersect", "lighten", "darken", "difference"])
+        .optional(),
+    inverted: z.boolean().optional(),
+    opacity: z.number().min(0).max(100).optional(),
+    expansion: z.number().optional(),
+    name: z.string().optional(),
+};
+// ===== Tier 3: Stroke dash =====
+export const SetStrokeDashInput = {
+    doc_id: DocId,
+    shape_path: z.string().min(1),
+    dash: z.number().positive(),
+    gap: z.number().positive().optional(),
+    offset: z.number().optional(),
+};
+// ===== Tier 3: Effects =====
+export const AddDropShadowInput = {
+    doc_id: DocId,
+    layer_index: z.number().int().nonnegative(),
+    color: RgbaColorSchema.optional(),
+    opacity: z.number().min(0).max(100).optional(),
+    direction: z.number().optional(),
+    distance: z.number().nonnegative().optional(),
+    softness: z.number().nonnegative().optional(),
+};
+export const AddBlurInput = {
+    doc_id: DocId,
+    layer_index: z.number().int().nonnegative(),
+    amount: z.number().nonnegative(),
+    dimensions: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    repeat_edge_pixels: z.boolean().optional(),
+};
+// ===== Visibility =====
+export const SetLayerVisibilityInput = {
+    doc_id: DocId,
+    layer_index: z.number().int().nonnegative(),
+    hidden: z.boolean(),
+};
+export const SetShapeVisibilityInput = {
+    doc_id: DocId,
+    shape_path: z.string().min(1),
+    hidden: z.boolean(),
+};
+export const CreateBlankLottieInput = {
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+    fps: z.number().positive().optional(),
+    duration_seconds: z.number().positive().optional(),
+    duration_frames: z.number().int().positive().optional(),
+    name: z.string().optional(),
+};
 //# sourceMappingURL=schemas.js.map
